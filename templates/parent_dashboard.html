@@ -1,0 +1,218 @@
+#parent_dashboard.html
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Student Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      margin: auto;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: #fff;
+    }
+
+    .btn-success:disabled {
+      background: #28a745;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .photo-box {
+      width: 120px;
+      height: 140px;
+      object-fit: cover;
+      margin-right: 20px;
+      border: 2px solid #333;
+      border-radius: 8px;
+    }
+
+    #payment-status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Student Details -->
+  <div class="card">
+    <h2>Student Details</h2>
+    <div style="display:flex; align-items:center;">
+      {% if photo %}
+      <img src="{{ url_for('static', filename='uploads/' ~ photo) }}" alt="Student Photo" class="photo-box">
+      {% else %}
+      <div
+        style="width:120px; height:140px; background:#ccc; display:flex; align-items:center; justify-content:center; margin-right:20px; border-radius:8px;">
+        <span>No Photo</span>
+      </div>
+      {% endif %}
+      <div>
+        <p><strong>Adm_code:</strong> {{ student.adm_code }}</p>
+        <p><strong>Name:</strong> {{ student.student_name }}</p>
+        <p><strong>Class:</strong> {{ student.class }}</p>
+        <p><strong>Father Name:</strong> {{ student.father_name }}</p>
+        <p><strong>Total Charges (Monthly):</strong> ₹{{ total }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fee Details -->
+  <div class="card">
+    <h2>Fee Details</h2>
+    <!-- ✅ Month locked: no dropdown -->
+    <p><strong>Month:</strong> {{ selected_month }}</p>
+    <p><strong>Total Fee for {{ selected_month }}:</strong> ₹{{ total }}</p>
+    <p><strong>Outstanding Balance:</strong> ₹{{ balance }}</p>
+
+    <!-- Hidden auto amount -->
+    <input type="hidden" id="paid" value="{{ total|int }}" />
+
+    <!-- Pay button -->
+    <button id="payBtn" class="btn btn-success" {% if total> balance %}disabled
+      style="opacity:0.5;cursor:not-allowed;"{% endif %}>
+      Pay Fee (₹{{ total }})
+    </button>
+    <div id="payment-status"></div>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="card">
+    <h2>Transaction History</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Month</th>
+          <th>Paid</th>
+          <th>Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td>{{ h.date.strftime("%d-%m-%y") }}</td>
+          <td>{{ h.month }}</td>
+          <td>₹{{ h.paid }}</td>
+          <td>₹{{ h.balance }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Razorpay Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    function showStatus(message, success = true) {
+      const box = document.getElementById("payment-status");
+      box.style.display = "block";
+      box.style.color = "#fff";
+      box.style.background = success ? "#28a745" : "#dc3545";
+      box.innerText = message;
+    }
+
+    document.getElementById("payBtn").onclick = function (e) {
+      e.preventDefault();
+      const paid = parseFloat(document.getElementById("paid").value || 0);
+      const balance = parseFloat("{{ balance }}");
+
+      // ✅ Check before Razorpay
+      if (paid > balance) {
+        showStatus("Invalid payment: Fee (" + paid + ") exceeds balance (" + balance + ")", false);
+        return;
+      }
+
+      fetch("/create_order", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "paid=" + paid + "&admission_code={{ student.adm_code }}"
+      })
+        .then(res => res.json())
+        .then(orderData => {
+          var options = {
+            "key": "{{ razorpay_key_id }}",
+            "amount": paid * 100,
+            "currency": "INR",
+            "name": "School Fees",
+            "description": "Fee for {{ selected_month }}",
+            "order_id": orderData.order_id,
+            "handler": function (response) {
+              fetch("/verify_payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  order_id: response.razorpay_order_id,
+                  payment_id: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                  admission_code: "{{ student.adm_code }}",
+                  student_name: "{{ student.student_name }}",
+                  class: "{{ student.class }}",
+                  father_name: "{{ student.father_name }}",
+                  photo: "{{ photo }}",
+                  month: "{{ selected_month }}",
+                  paid: paid
+                })
+              }).then(res => res.json())
+                .then(data => {
+                  if (data.status === "success") {
+                    showStatus("Payment successful!", true);
+                    setTimeout(() => window.location.reload(), 2000);
+                  } else {
+                    showStatus("Payment failed: " + data.message, false);
+                  }
+                });
+            }
+          };
+          var rzp1 = new Razorpay(options);
+          rzp1.open();
+        });
+    };
+  </script>
+
+</body>
+
+</html>
