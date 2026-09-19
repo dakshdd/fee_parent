@@ -1,189 +1,471 @@
-#parent_dashboard.html
 <!doctype html>
+
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Student Dashboard</title>
+
   <style>
+    * {
+      box-sizing: border-box
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #eef2f7;
       margin: 0;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937
+    }
+
+    .container {
+      max-width: 850px;
+      margin: auto;
+      padding: 14px
+    }
+
+    .school {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff;
+      text-align: center;
+      padding: 15px;
+      border-radius: 14px;
+      margin-bottom: 12px
+    }
+
+    .school h1 {
+      margin: 0;
+      font-size: 22px
+    }
+
+    .school p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      opacity: .9
     }
 
     .card {
       background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      max-width: 800px;
-      margin: auto;
-      margin-bottom: 20px;
+      border: 1px solid #e8edf3;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, .05)
     }
 
     h2 {
-      margin-top: 0;
-      color: #333;
+      font-size: 17px;
+      margin: 0 0 13px;
+      color: #111827
+    }
+
+    .student {
+      display: flex;
+      gap: 16px;
+      align-items: center
+    }
+
+    .photo,
+    .no-photo {
+      width: 85px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid #e5e7eb;
+      flex-shrink: 0
+    }
+
+    .no-photo {
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #64748b
+    }
+
+    .details {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px
+    }
+
+    .detail {
+      background: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 8px
+    }
+
+    .label {
+      display: block;
+      font-size: 11px;
+      color: #64748b
+    }
+
+    .value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b
+    }
+
+    .fee {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-bottom: 13px
+    }
+
+    .fee-box {
+      background: #f8fafc;
+      border: 1px solid #edf1f5;
+      padding: 10px;
+      border-radius: 9px
+    }
+
+    .fee-box span {
+      display: block;
+      font-size: 11px;
+      color: #64748b
+    }
+
+    .fee-box strong {
+      font-size: 16px;
+      display: block;
+      margin-top: 3px
+    }
+
+    .balance {
+      background: #fff7ed;
+      border-color: #fed7aa
+    }
+
+    .balance strong {
+      color: #ea580c
+    }
+
+    .pay-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px
+    }
+
+    .pay-btn {
+      border: 0;
+      background: #16a34a;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 9px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px
+    }
+
+    .pay-btn:hover {
+      background: #15803d
+    }
+
+    .pay-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed
+    }
+
+    #payment-status {
+      display: none;
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #fff
+    }
+
+    .table-wrap {
+      overflow-x: auto
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      min-width: 500px
     }
 
     th,
     td {
-      padding: 10px;
+      padding: 9px 8px;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #edf0f4;
+      font-size: 12px
     }
 
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    th {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 11px
     }
 
-    .btn-success {
-      background: #28a745;
-      color: #fff;
+    .paid {
+      color: #16a34a;
+      font-weight: 600
     }
 
-    .btn-success:disabled {
-      background: #28a745;
-      opacity: 0.5;
-      cursor: not-allowed;
+    .remaining {
+      color: #ea580c;
+      font-weight: 600
     }
 
-    .photo-box {
-      width: 120px;
-      height: 140px;
-      object-fit: cover;
-      margin-right: 20px;
-      border: 2px solid #333;
-      border-radius: 8px;
-    }
+    @media(max-width:600px) {
+      .container {
+        padding: 9px
+      }
 
-    #payment-status {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 5px;
-      display: none;
+      .card {
+        padding: 13px
+      }
+
+      .details {
+        grid-template-columns: 1fr
+      }
+
+      .fee {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .fee-box:last-child {
+        grid-column: 1/-1
+      }
+
+      .pay-row {
+        flex-direction: column;
+        align-items: stretch
+      }
+
+      .pay-btn {
+        width: 100%
+      }
     }
   </style>
+
 </head>
 
 <body>
-  <!-- Student Details -->
-  <div class="card">
-    <h2>Student Details</h2>
-    <div style="display:flex; align-items:center;">
-      {% if photo %}
-      <img src="{{ url_for('static', filename='uploads/' ~ photo) }}" alt="Student Photo" class="photo-box">
-      {% else %}
-      <div
-        style="width:120px; height:140px; background:#ccc; display:flex; align-items:center; justify-content:center; margin-right:20px; border-radius:8px;">
-        <span>No Photo</span>
-      </div>
-      {% endif %}
-      <div>
-        <p><strong>Adm_code:</strong> {{ student.adm_code }}</p>
-        <p><strong>Name:</strong> {{ student.student_name }}</p>
-        <p><strong>Class:</strong> {{ student.class }}</p>
-        <p><strong>Father Name:</strong> {{ student.father_name }}</p>
-        <p><strong>Total Charges (Monthly):</strong> ₹{{ total }}</p>
-      </div>
+
+  <div class="container">
+
+    <!-- School -->
+
+    <div class="school">
+      <h1>{{ school.name }}</h1>
+      <p>{{ school.address }}</p>
     </div>
+
+    <!-- Student -->
+
+    <div class="card">
+      <h2>👨‍🎓 Student Details</h2>
+
+      ```
+      <div class="student">
+
+        {% if photo %}
+        <img src="{{ url_for('static',filename='uploads/' ~ photo) }}" class="photo" alt="Student Photo">
+        {% else %}
+        <div class="no-photo">No Photo</div>
+        {% endif %}
+
+        <div class="details">
+
+          <div class="detail">
+            <span class="label">Admission Code</span>
+            <span class="value">{{ student.adm_code }}</span>
+          </div>
+
+          <div class="detail">
+            <span class="label">Student Name</span>
+            <span class="value">{{ student.student_name }}</span>
+          </div>
+
+          <div class="detail">
+            <span class="label">Class</span>
+            <span class="value">{{ student.class }}</span>
+          </div>
+
+          <div class="detail">
+            <span class="label">Father Name</span>
+            <span class="value">{{ student.father_name }}</span>
+          </div>
+
+        </div>
+      </div>
+      ```
+
+    </div>
+
+    <!-- Fee -->
+
+    <div class="card">
+
+      ```
+      <h2>💳 Fee Details</h2>
+
+      <div class="fee">
+
+        <div class="fee-box">
+          <span>Month</span>
+          <strong>{{ selected_month }}</strong>
+        </div>
+
+        <div class="fee-box">
+          <span>Monthly Amount</span>
+          <strong>₹{{ total }}</strong>
+        </div>
+
+        <div class="fee-box balance">
+          <span>Outstanding</span>
+          <strong>₹{{ balance }}</strong>
+        </div>
+
+      </div>
+
+      <!-- IMPORTANT: Paid amount = Monthly Total -->
+      <input type="hidden" id="paid" value="{{ total|int }}">
+
+      <div class="pay-row">
+
+        <small style="color:#64748b">
+          Monthly fee: ₹{{ total }}
+        </small>
+
+        <button id="payBtn" class="pay-btn" {% if balance <=0 %}disabled{% endif %}>
+          {% if balance > 0 %}
+          Pay ₹{{ total }}
+          {% else %}
+          Paid ✓
+          {% endif %}
+        </button>
+
+      </div>
+
+      <div id="payment-status"></div>
+      ```
+
+    </div>
+
+    <!-- History -->
+
+    <div class="card">
+
+      ```
+      <h2>📋 Transaction History</h2>
+
+      <div class="table-wrap">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Month</th>
+              <th>Paid</th>
+              <th>Balance</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {% for h in history %}
+            <tr>
+              <td>{{ h.date.strftime("%d-%m-%Y") }}</td>
+              <td>{{ h.month }}</td>
+              <td class="paid">₹{{ h.paid }}</td>
+              <td class="remaining">₹{{ h.balance }}</td>
+            </tr>
+
+            {% else %}
+            <tr>
+              <td colspan="4" style="text-align:center;color:#94a3b8">
+                No transactions found
+              </td>
+            </tr>
+            {% endfor %}
+
+          </tbody>
+        </table>
+
+      </div>
+      ```
+
+    </div>
+
   </div>
 
-  <!-- Fee Details -->
-  <div class="card">
-    <h2>Fee Details</h2>
-    <!-- ✅ Month locked: no dropdown -->
-    <p><strong>Month:</strong> {{ selected_month }}</p>
-    <p><strong>Total Fee for {{ selected_month }}:</strong> ₹{{ total }}</p>
-    <p><strong>Outstanding Balance:</strong> ₹{{ balance }}</p>
-
-    <!-- Hidden auto amount -->
-    <input type="hidden" id="paid" value="{{ total|int }}" />
-
-    <!-- Pay button -->
-    <button id="payBtn" class="btn btn-success" {% if total> balance %}disabled
-      style="opacity:0.5;cursor:not-allowed;"{% endif %}>
-      Pay Fee (₹{{ total }})
-    </button>
-    <div id="payment-status"></div>
-  </div>
-
-  <!-- Transaction History -->
-  <div class="card">
-    <h2>Transaction History</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Month</th>
-          <th>Paid</th>
-          <th>Balance</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for h in history %}
-        <tr>
-          <td>{{ h.date.strftime("%d-%m-%y") }}</td>
-          <td>{{ h.month }}</td>
-          <td>₹{{ h.paid }}</td>
-          <td>₹{{ h.balance }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Razorpay Script -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <script>
-    function showStatus(message, success = true) {
-      const box = document.getElementById("payment-status");
-      box.style.display = "block";
-      box.style.color = "#fff";
-      box.style.background = success ? "#28a745" : "#dc3545";
-      box.innerText = message;
-    }
 
     document.getElementById("payBtn").onclick = function (e) {
+
       e.preventDefault();
-      const paid = parseFloat(document.getElementById("paid").value || 0);
+
+      const paid = parseFloat(
+        document.getElementById("paid").value || 0
+      );
+
       const balance = parseFloat("{{ balance }}");
 
-      // ✅ Check before Razorpay
-      if (paid > balance) {
-        showStatus("Invalid payment: Fee (" + paid + ") exceeds balance (" + balance + ")", false);
+      if (paid <= 0) {
+        showStatus("Invalid fee amount.", false);
         return;
       }
 
+      if (paid > balance) {
+        showStatus(
+          "Payment amount exceeds outstanding balance.",
+          false
+        );
+        return;
+      }
+
+      const btn = document.getElementById("payBtn");
+
+      btn.disabled = true;
+      btn.innerText = "Processing...";
+
       fetch("/create_order", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "paid=" + paid + "&admission_code={{ student.adm_code }}"
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body:
+          "paid=" + encodeURIComponent(paid) +
+          "&admission_code=" +
+          encodeURIComponent("{{ student.adm_code }}")
       })
+
         .then(res => res.json())
         .then(orderData => {
-          var options = {
-            "key": "{{ razorpay_key_id }}",
-            "amount": paid * 100,
-            "currency": "INR",
-            "name": "School Fees",
-            "description": "Fee for {{ selected_month }}",
-            "order_id": orderData.order_id,
-            "handler": function (response) {
+
+          if (!orderData.order_id) {
+            throw new Error(
+              orderData.message || "Order creation failed"
+            );
+          }
+
+          const options = {
+            key: "{{ razorpay_key_id }}",
+            amount: paid * 100,
+            currency: "INR",
+            name: "School Fees",
+            description: "Fee for {{ selected_month }}",
+            order_id: orderData.order_id,
+
+            handler: function (response) {
+
               fetch("/verify_payment", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json"
+                },
                 body: JSON.stringify({
                   order_id: response.razorpay_order_id,
                   payment_id: response.razorpay_payment_id,
@@ -196,21 +478,67 @@
                   month: "{{ selected_month }}",
                   paid: paid
                 })
-              }).then(res => res.json())
+              })
+                .then(res => res.json())
                 .then(data => {
+
                   if (data.status === "success") {
                     showStatus("Payment successful!", true);
-                    setTimeout(() => window.location.reload(), 2000);
+
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 1500);
+
                   } else {
-                    showStatus("Payment failed: " + data.message, false);
+                    showStatus(
+                      "Payment failed: " + data.message,
+                      false
+                    );
+
+                    btn.disabled = false;
+                    btn.innerText = "Pay ₹" + paid;
                   }
+
                 });
+
+            },
+
+            modal: {
+              ondismiss: function () {
+                btn.disabled = false;
+                btn.innerText = "Pay ₹" + paid;
+              }
             }
           };
-          var rzp1 = new Razorpay(options);
-          rzp1.open();
+
+          new Razorpay(options).open();
+
+        })
+        .catch(error => {
+
+          showStatus(
+            error.message || "Unable to start payment.",
+            false
+          );
+
+          btn.disabled = false;
+          btn.innerText = "Pay ₹" + paid;
+
         });
+
     };
+
+
+    function showStatus(message, success) {
+
+      const box = document.getElementById("payment-status");
+
+      box.style.display = "block";
+      box.style.background = success ? "#16a34a" : "#dc2626";
+      box.innerText = message;
+
+    }
+
   </script>
 
 </body>

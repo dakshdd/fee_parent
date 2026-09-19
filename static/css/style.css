@@ -1,0 +1,65 @@
+
+/* Sidebar background */
+.sidebar {
+    width: 250px;
+    background: linear-gradient(180deg, #2c3e50, #34495e);
+    color: white;
+    height: 100vh;
+    position: fixed;
+    overflow-y: auto;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+}
+
+/* Sidebar heading */
+.sidebar h2 {
+    text-align: center;
+    padding: 15px;
+    font-weight: bold;
+    color: white;
+    font-size: 20px;   /* smaller font */
+    letter-spacing: 1px;
+}
+
+/* Gradient buttons with white text */
+.btn-gradient-primary,
+.btn-gradient-success,
+.btn-gradient-warning,
+.btn-gradient-info,
+.btn-gradient-danger,
+.btn-gradient-secondary {
+    color: #fff !important;
+    font-weight: bold;
+    text-align: left;
+    transition: 0.3s;
+}
+
+/* Hover effect for gradient buttons */
+.btn-gradient-primary:hover,
+.btn-gradient-success:hover,
+.btn-gradient-warning:hover,
+.btn-gradient-info:hover,
+.btn-gradient-danger:hover,
+.btn-gradient-secondary:hover {
+    color: #fff !important;
+    transform: scale(1.05);
+}
+
+/* Sidebar links (submenu items) */
+.sidebar .nav-link {
+    color: #fff !important;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: 0.3s;
+}
+
+/* Hover effect for submenu links */
+.sidebar .nav-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    font-weight: bold;
+    transform: translateX(5px);
+
+/* Collapse sub-menu links */
+.sidebar ul ul li a {
+    font-size: 14px;
+    padding-left: 20px;
+}

@@ -94,7 +94,9 @@ def dashboard():
         paid_months=paid_months,
         razorpay_key_id=RAZORPAY_KEY_ID,
         selected_month=selected_month,
-        photo=r.get("photo", "")
+        photo=r.get("photo", ""),
+        school={"name": "ABC Public School",
+                "address": "Tilak Nagar, New Delhi"}
     )
 
 
