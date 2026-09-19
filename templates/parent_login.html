@@ -1,89 +1,256 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parent Login</title>
+
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f2f5;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      padding: 20px;
+      background: linear-gradient(160deg, #1E40AF, #3B82F6, #60A5FA);
+      overflow: hidden;
+      position: relative;
     }
 
-    .login-card {
+    /* Decorative Shapes */
+    .circle1,
+    .circle2 {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .12);
+      z-index: 0;
+    }
+
+    .circle1 {
+      width: 250px;
+      height: 250px;
+      top: -90px;
+      left: -70px;
+    }
+
+    .circle2 {
+      width: 320px;
+      height: 320px;
+      bottom: -120px;
+      right: -90px;
+    }
+
+    .login-box {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 380px;
       background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      width: 350px;
+      border-radius: 28px;
+      padding: 28px 24px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
     }
 
-    h2 {
+    .top {
       text-align: center;
-      margin-bottom: 20px;
-      color: #333;
+      margin-bottom: 25px;
+    }
+
+    .avatar {
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      margin: auto;
+      background: linear-gradient(135deg, #2563EB, #4338CA);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 38px;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, .35);
+    }
+
+    .school {
+      margin-top: 15px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1E3A8A;
+    }
+
+    .sub {
+      color: #64748B;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .error {
+      background: #FEE2E2;
+      color: #B91C1C;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      border-left: 4px solid #DC2626;
     }
 
     label {
       display: block;
-      margin-top: 10px;
-      font-weight: bold;
+      margin: 14px 0 6px;
+      font-size: 13px;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .field {
+      position: relative;
+    }
+
+    .field span {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      color: #2563EB;
     }
 
     input {
       width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      padding: 14px 14px 14px 46px;
+      border: 1px solid #D6E4FF;
+      border-radius: 14px;
+      background: #F8FAFF;
+      font-size: 14px;
+      outline: none;
+      transition: .25s;
+    }
+
+    input:focus {
+      background: #fff;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
     }
 
     button {
       width: 100%;
-      padding: 10px;
-      margin-top: 20px;
-      background: #007bff;
-      color: #fff;
+      margin-top: 24px;
+      padding: 14px;
       border: none;
-      border-radius: 5px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
-      font-size: 16px;
+      transition: .25s;
     }
 
     button:hover {
-      background: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(37, 99, 235, .28);
     }
 
-    .error {
-      background: #fecaca;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
+    .bottom {
       text-align: center;
+      margin-top: 20px;
+      color: #64748B;
+      font-size: 12px;
+      line-height: 18px;
+    }
+
+    .secure {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #EFF6FF;
+      color: #2563EB;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    @media(max-width:480px) {
+
+      .login-box {
+        padding: 24px 18px;
+        border-radius: 22px;
+      }
+
+      .avatar {
+        width: 72px;
+        height: 72px;
+        font-size: 32px;
+      }
+
+      .school {
+        font-size: 20px;
+      }
+
+      input {
+        font-size: 15px;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="login-card">
-    <h2>Parent Login</h2>
+
+  <div class="circle1"></div>
+  <div class="circle2"></div>
+
+  <div class="login-box">
+
+    <div class="top">
+      <div class="avatar">🎓</div>
+
+      <div class="school">Parent Portal</div>
+      <div class="sub">School Fee Management System</div>
+    </div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, msg in messages %}
     <div class="error">{{ msg }}</div>
     {% endfor %}
     {% endwith %}
-    <form method="post">
+
+    <form method="POST">
+
       <label>Admission Code</label>
-      <input type="text" name="adm_code" required>
+      <div class="field">
+        <span>👤</span>
+        <input type="text" name="adm_code" placeholder="Enter Admission Code" required>
+      </div>
+
       <label>Password</label>
-      <input type="password" name="password" required>
-      <button type="submit">Login</button>
+      <div class="field">
+        <span>🔑</span>
+        <input type="password" name="password" placeholder="Enter Password" required>
+      </div>
+
+      <button type="submit">
+        LOGIN TO DASHBOARD
+      </button>
+
     </form>
+
+    <div class="bottom">
+      Copyright © 2026 DAKSH D SOFTWARE (9810124820)
+      <div class="secure">
+        🔒 Secure Login
+      </div>
+    </div>
+
   </div>
+
 </body>
 
 </html>

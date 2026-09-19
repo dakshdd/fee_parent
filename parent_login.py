@@ -95,8 +95,8 @@ def dashboard():
         razorpay_key_id=RAZORPAY_KEY_ID,
         selected_month=selected_month,
         photo=r.get("photo", ""),
-        school={"name": "ABC Public School",
-                "address": "Tilak Nagar, New Delhi"}
+        school={"name": "SHARDA INTERNATIONAL SCHOOL",
+                "address": "SHIV NAGAR, PATAUDI ROAD, GURUGRAM-122001(Hr.)"}
     )
 
 

@@ -265,7 +265,6 @@
     <div class="card">
       <h2>👨‍🎓 Student Details</h2>
 
-      ```
       <div class="student">
 
         {% if photo %}
@@ -298,7 +297,7 @@
 
         </div>
       </div>
-      ```
+
 
     </div>
 
@@ -306,7 +305,7 @@
 
     <div class="card">
 
-      ```
+
       <h2>💳 Fee Details</h2>
 
       <div class="fee">
@@ -317,7 +316,7 @@
         </div>
 
         <div class="fee-box">
-          <span>Monthly Amount</span>
+          <span>Payable Amount</span>
           <strong>₹{{ total }}</strong>
         </div>
 
@@ -328,13 +327,13 @@
 
       </div>
 
-      <!-- IMPORTANT: Paid amount = Monthly Total -->
+      <!-- IMPORTANT: Paid amount = Total -->
       <input type="hidden" id="paid" value="{{ total|int }}">
 
       <div class="pay-row">
 
         <small style="color:#64748b">
-          Monthly fee: ₹{{ total }}
+          This Monthly fee: ₹{{ total }}
         </small>
 
         <button id="payBtn" class="pay-btn" {% if balance <=0 %}disabled{% endif %}>
@@ -348,7 +347,7 @@
       </div>
 
       <div id="payment-status"></div>
-      ```
+
 
     </div>
 
@@ -356,7 +355,7 @@
 
     <div class="card">
 
-      ```
+
       <h2>📋 Transaction History</h2>
 
       <div class="table-wrap">
@@ -393,7 +392,7 @@
         </table>
 
       </div>
-      ```
+
 
     </div>
 
