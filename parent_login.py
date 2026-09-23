@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo import MongoClient, ReturnDocument
 from types import SimpleNamespace
 import razorpay
@@ -42,6 +42,46 @@ def login():
         flash("Invalid login credentials", "error")
     return render_template("parent_login.html")
 
+# ================== Flutter Mobile Login API ==================
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    try:
+        data = request.get_json()
+
+        adm_code = data.get("adm_code", "").strip().upper()
+        password = data.get("password", "").strip()
+
+        # school_db.master
+        student = master_col.find_one({"adm_code": adm_code})
+
+        if not student:
+            return jsonify({
+                "success": False,
+                "message": "Invalid Admission Code"
+            }), 401
+
+        # Check hashed password
+        if not check_password_hash(student["password_hash"], password):
+            return jsonify({
+                "success": False,
+                "message": "Incorrect Password"
+            }), 401
+
+        return jsonify({
+            "success": True,
+            "adm_code": student["adm_code"],
+            "student_name": student.get("student_name", ""),
+            "class": student.get("class", ""),
+            "section": student.get("sec", ""),
+            "photo": student.get("photo", "")
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+# ==============================================================
 
 @app.route("/dashboard")
 def dashboard():

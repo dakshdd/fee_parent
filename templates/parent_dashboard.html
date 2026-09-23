@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -268,7 +267,8 @@
       <div class="student">
 
         {% if photo %}
-        <img src="{{ url_for('static',filename='uploads/' ~ photo) }}" class="photo" alt="Student Photo">
+        <img src="{{ url_for('static', filename='uploads/' ~ photo) }}" class="photo" alt="Student Photo"
+          onerror="this.style.display='none';">
         {% else %}
         <div class="no-photo">No Photo</div>
         {% endif %}
