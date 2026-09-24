@@ -69,10 +69,11 @@ def api_login():
 
         return jsonify({
             "success": True,
-            "adm_code": student["adm_code"],
+            "adm_code": student.get("adm_code", ""),
             "student_name": student.get("student_name", ""),
             "class": student.get("class", ""),
             "section": student.get("sec", ""),
+            "father_name": student.get("father_name", ""),
             "photo": student.get("photo", "")
         })
 
