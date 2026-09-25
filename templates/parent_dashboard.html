@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Student Dashboard</title>
+  <title>{{ school.name or "Student Dashboard" }}</title>
 
   <style>
     * {
@@ -245,22 +245,25 @@
       }
     }
   </style>
-
 </head>
 
 <body>
-
   <div class="container">
 
-    <!-- School -->
-
+    <!-- SCHOOL -->
     <div class="school">
-      <h1>{{ school.name }}</h1>
-      <p>{{ school.address }}</p>
+      <h1>🏫 {{ school.name }}</h1>
+
+      {% if school.address %}
+      <p>📍 {{ school.address }}</p>
+      {% endif %}
+
+      {% if school.phone %}
+      <p>📞 {{ school.phone }}</p>
+      {% endif %}
     </div>
 
-    <!-- Student -->
-
+    <!-- STUDENT -->
     <div class="card">
       <h2>👨‍🎓 Student Details</h2>
 
@@ -297,15 +300,10 @@
 
         </div>
       </div>
-
-
     </div>
 
-    <!-- Fee -->
-
+    <!-- FEE -->
     <div class="card">
-
-
       <h2>💳 Fee Details</h2>
 
       <div class="fee">
@@ -327,7 +325,6 @@
 
       </div>
 
-      <!-- IMPORTANT: Paid amount = Total -->
       <input type="hidden" id="paid" value="{{ total|int }}">
 
       <div class="pay-row">
@@ -337,29 +334,25 @@
         </small>
 
         <button id="payBtn" class="pay-btn" {% if balance <=0 %}disabled{% endif %}>
+
           {% if balance > 0 %}
           Pay ₹{{ total }}
           {% else %}
           Paid ✓
           {% endif %}
+
         </button>
 
       </div>
 
       <div id="payment-status"></div>
-
-
     </div>
 
-    <!-- History -->
-
+    <!-- HISTORY -->
     <div class="card">
-
-
       <h2>📋 Transaction History</h2>
 
       <div class="table-wrap">
-
         <table>
           <thead>
             <tr>
@@ -371,7 +364,6 @@
           </thead>
 
           <tbody>
-
             {% for h in history %}
             <tr>
               <td>{{ h.date.strftime("%d-%m-%Y") }}</td>
@@ -387,13 +379,9 @@
               </td>
             </tr>
             {% endfor %}
-
           </tbody>
         </table>
-
       </div>
-
-
     </div>
 
   </div>
@@ -401,16 +389,12 @@
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <script>
-
     document.getElementById("payBtn").onclick = function (e) {
-
       e.preventDefault();
 
-      const paid = parseFloat(
-        document.getElementById("paid").value || 0
-      );
-
+      const paid = parseFloat(document.getElementById("paid").value || 0);
       const balance = parseFloat("{{ balance }}");
+      const btn = document.getElementById("payBtn");
 
       if (paid <= 0) {
         showStatus("Invalid fee amount.", false);
@@ -418,43 +402,30 @@
       }
 
       if (paid > balance) {
-        showStatus(
-          "Payment amount exceeds outstanding balance.",
-          false
-        );
+        showStatus("Payment amount exceeds outstanding balance.", false);
         return;
       }
-
-      const btn = document.getElementById("payBtn");
 
       btn.disabled = true;
       btn.innerText = "Processing...";
 
       fetch("/create_order", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body:
-          "paid=" + encodeURIComponent(paid) +
-          "&admission_code=" +
-          encodeURIComponent("{{ student.adm_code }}")
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "paid=" + encodeURIComponent(paid) +
+          "&admission_code=" + encodeURIComponent("{{ student.adm_code }}")
       })
-
         .then(res => res.json())
         .then(orderData => {
 
-          if (!orderData.order_id) {
-            throw new Error(
-              orderData.message || "Order creation failed"
-            );
-          }
+          if (!orderData.order_id)
+            throw new Error(orderData.message || "Order creation failed");
 
           const options = {
             key: "{{ razorpay_key_id }}",
             amount: paid * 100,
             currency: "INR",
-            name: "School Fees",
+            name: "{{ school.name }}",
             description: "Fee for {{ selected_month }}",
             order_id: orderData.order_id,
 
@@ -462,9 +433,7 @@
 
               fetch("/verify_payment", {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   order_id: response.razorpay_order_id,
                   payment_id: response.razorpay_payment_id,
@@ -489,17 +458,11 @@
                     }, 1500);
 
                   } else {
-                    showStatus(
-                      "Payment failed: " + data.message,
-                      false
-                    );
-
+                    showStatus("Payment failed: " + data.message, false);
                     btn.disabled = false;
                     btn.innerText = "Pay ₹" + paid;
                   }
-
                 });
-
             },
 
             modal: {
@@ -511,33 +474,20 @@
           };
 
           new Razorpay(options).open();
-
         })
         .catch(error => {
-
-          showStatus(
-            error.message || "Unable to start payment.",
-            false
-          );
-
+          showStatus(error.message || "Unable to start payment.", false);
           btn.disabled = false;
           btn.innerText = "Pay ₹" + paid;
-
         });
-
     };
 
-
     function showStatus(message, success) {
-
       const box = document.getElementById("payment-status");
-
       box.style.display = "block";
       box.style.background = success ? "#16a34a" : "#dc2626";
       box.innerText = message;
-
     }
-
   </script>
 
 </body>

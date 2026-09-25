@@ -3,15 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Parent Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>{{ school.name if school else "Parent Portal" }}</title>
 
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', sans-serif
     }
 
     body {
@@ -22,30 +22,29 @@
       padding: 20px;
       background: linear-gradient(160deg, #1E40AF, #3B82F6, #60A5FA);
       overflow: hidden;
-      position: relative;
+      position: relative
     }
 
-    /* Decorative Shapes */
     .circle1,
     .circle2 {
       position: absolute;
       border-radius: 50%;
       background: rgba(255, 255, 255, .12);
-      z-index: 0;
+      z-index: 0
     }
 
     .circle1 {
       width: 250px;
       height: 250px;
       top: -90px;
-      left: -70px;
+      left: -70px
     }
 
     .circle2 {
       width: 320px;
       height: 320px;
       bottom: -120px;
-      right: -90px;
+      right: -90px
     }
 
     .login-box {
@@ -56,12 +55,12 @@
       background: #fff;
       border-radius: 28px;
       padding: 28px 24px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .18)
     }
 
     .top {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 25px
     }
 
     .avatar {
@@ -75,20 +74,33 @@
       align-items: center;
       color: #fff;
       font-size: 38px;
-      box-shadow: 0 10px 25px rgba(37, 99, 235, .35);
+      box-shadow: 0 10px 25px rgba(37, 99, 235, .35)
     }
 
     .school {
       margin-top: 15px;
-      font-size: 22px;
+      font-size: 21px;
       font-weight: 700;
-      color: #1E3A8A;
+      color: #1E3A8A
+    }
+
+    .address {
+      color: #64748B;
+      font-size: 12px;
+      margin-top: 5px;
+      line-height: 17px
+    }
+
+    .phone {
+      color: #2563EB;
+      font-size: 12px;
+      margin-top: 3px
     }
 
     .sub {
       color: #64748B;
       font-size: 13px;
-      margin-top: 4px;
+      margin-top: 8px
     }
 
     .error {
@@ -98,7 +110,7 @@
       border-radius: 10px;
       margin-bottom: 14px;
       font-size: 13px;
-      border-left: 4px solid #DC2626;
+      border-left: 4px solid #DC2626
     }
 
     label {
@@ -106,11 +118,11 @@
       margin: 14px 0 6px;
       font-size: 13px;
       color: #334155;
-      font-weight: 600;
+      font-weight: 600
     }
 
     .field {
-      position: relative;
+      position: relative
     }
 
     .field span {
@@ -119,7 +131,7 @@
       top: 50%;
       transform: translateY(-50%);
       font-size: 18px;
-      color: #2563EB;
+      color: #2563EB
     }
 
     input {
@@ -130,32 +142,32 @@
       background: #F8FAFF;
       font-size: 14px;
       outline: none;
-      transition: .25s;
+      transition: .25s
     }
 
     input:focus {
       background: #fff;
       border-color: #2563EB;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12)
     }
 
     button {
       width: 100%;
       margin-top: 24px;
       padding: 14px;
-      border: none;
+      border: 0;
       border-radius: 14px;
       background: linear-gradient(135deg, #2563EB, #1D4ED8);
       color: #fff;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: .25s;
+      transition: .25s
     }
 
     button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 25px rgba(37, 99, 235, .28);
+      box-shadow: 0 12px 25px rgba(37, 99, 235, .28)
     }
 
     .bottom {
@@ -163,7 +175,7 @@
       margin-top: 20px;
       color: #64748B;
       font-size: 12px;
-      line-height: 18px;
+      line-height: 18px
     }
 
     .secure {
@@ -175,28 +187,27 @@
       padding: 8px 12px;
       border-radius: 20px;
       font-size: 12px;
-      margin-top: 10px;
+      margin-top: 10px
     }
 
     @media(max-width:480px) {
-
       .login-box {
         padding: 24px 18px;
-        border-radius: 22px;
+        border-radius: 22px
       }
 
       .avatar {
         width: 72px;
         height: 72px;
-        font-size: 32px;
+        font-size: 32px
       }
 
       .school {
-        font-size: 20px;
+        font-size: 19px
       }
 
       input {
-        font-size: 15px;
+        font-size: 15px
       }
     }
   </style>
@@ -210,14 +221,33 @@
   <div class="login-box">
 
     <div class="top">
+
       <div class="avatar">🎓</div>
 
-      <div class="school">Parent Portal</div>
-      <div class="sub">School Fee Management System</div>
+      <div class="school">
+        {{ school.name if school and school.name else "Parent Portal" }}
+      </div>
+
+      {% if school and school.address %}
+      <div class="address">
+        📍 {{ school.address }}
+      </div>
+      {% endif %}
+
+      {% if school and school.phone %}
+      <div class="phone">
+        📞 {{ school.phone }}
+      </div>
+      {% endif %}
+
+      <div class="sub">
+        School Fee Management System
+      </div>
+
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, msg in messages %}
+    {% with messages=get_flashed_messages(with_categories=true) %}
+    {% for category,msg in messages %}
     <div class="error">{{ msg }}</div>
     {% endfor %}
     {% endwith %}
@@ -225,12 +255,14 @@
     <form method="POST">
 
       <label>Admission Code</label>
+
       <div class="field">
         <span>👤</span>
         <input type="text" name="adm_code" placeholder="Enter Admission Code" required>
       </div>
 
       <label>Password</label>
+
       <div class="field">
         <span>🔑</span>
         <input type="password" name="password" placeholder="Enter Password" required>
@@ -244,6 +276,7 @@
 
     <div class="bottom">
       Copyright © 2026 DAKSH D SOFTWARE (9810124820)
+
       <div class="secure">
         🔒 Secure Login
       </div>

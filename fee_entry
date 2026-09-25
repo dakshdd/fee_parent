@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fee Entry</title>
+</head>
+<body>
+    <h2>Fee Payment</h2>
+
+    <p>Admission Code: {{ adm_code }}</p>
+    <p>Student: {{ student.student_name }}</p>
+
+    <!-- Yahan Razorpay / payment form rahega -->
+</body>
+</html>

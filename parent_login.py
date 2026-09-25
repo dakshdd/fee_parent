@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from werkzeug.security import check_password_hash, generate_password_hash
-from pymongo import MongoClient, ReturnDocument
+from werkzeug.security import check_password_hash
+from pymongo import ReturnDocument
 from types import SimpleNamespace
 import razorpay
 import os
 import datetime
-from db import master_collection, counters_collection, tran_collection as tran_col, master_col
+from db import master_collection, counters_collection, tran_collection as tran_col, master_col, get_school
 from datetime import timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -13,10 +13,10 @@ IST = timezone(timedelta(hours=5, minutes=30))
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default_secret")
 
-
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_SDy9xMyjmCtIEt")
 RAZORPAY_KEY_SECRET = os.environ.get(
-    "RAZORPAY_KEY_SECRET", "75xgs943MeNtbDqy4PH1p3Fh")
+    "RAZORPAY_KEY_SECRET", "75xgs943MeNtbDqy4PH1p3Fh"
+)
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 
@@ -32,12 +32,10 @@ def get_next_receipt_number():
 
 @app.route("/", methods=["GET", "POST"])
 def login():
-    # Flutter se adm_code aaye to direct dashboard
     adm_code = request.args.get("adm_code", "").strip().upper()
 
     if adm_code:
         student = master_col.find_one({"adm_code": adm_code})
-
         if student:
             session["admission_code"] = adm_code
             return redirect(url_for("dashboard"))
@@ -45,28 +43,34 @@ def login():
     if request.method == "POST":
         adm_code = request.form.get("adm_code", "").strip().upper()
         password = request.form.get("password", "")
-
         r = master_col.find_one({"adm_code": adm_code})
 
         if r and "password_hash" in r and check_password_hash(
-                r["password_hash"], password
-        ):
+                r["password_hash"], password):
             session["admission_code"] = adm_code
             return redirect(url_for("dashboard"))
 
         flash("Invalid login credentials", "error")
 
-    return render_template("parent_login.html")
+    school_data = get_school()
+
+    school = {
+        "name": school_data.get("school_name", ""),
+        "address": school_data.get("address", ""),
+        "phone": school_data.get("phone", "")
+    }
+
+    return render_template("parent_login.html", school=school)
+
+
 # ================== Flutter Mobile Login API ==================
 @app.route("/api/login", methods=["POST"])
 def api_login():
     try:
-        data = request.get_json()
-
+        data = request.get_json() or {}
         adm_code = data.get("adm_code", "").strip().upper()
         password = data.get("password", "").strip()
 
-        # school_db.master
         student = master_col.find_one({"adm_code": adm_code})
 
         if not student:
@@ -75,12 +79,13 @@ def api_login():
                 "message": "Invalid Admission Code"
             }), 401
 
-        # Check hashed password
         if not check_password_hash(student["password_hash"], password):
             return jsonify({
                 "success": False,
                 "message": "Incorrect Password"
             }), 401
+
+        school_data = get_school()
 
         return jsonify({
             "success": True,
@@ -89,15 +94,17 @@ def api_login():
             "class": student.get("class", ""),
             "section": student.get("sec", ""),
             "father_name": student.get("father_name", ""),
-            "photo": student.get("photo", "")
+            "photo": student.get("photo", ""),
+            "school_name": school_data.get("school_name", ""),
+            "school_address": school_data.get("address", ""),
+            "school_phone": school_data.get("phone", "")
         })
-
     except Exception as e:
         return jsonify({
             "success": False,
             "message": str(e)
         }), 500
-# ==============================================================
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -106,6 +113,7 @@ def dashboard():
 
     adm_code = session["admission_code"]
     r = master_col.find_one({"adm_code": adm_code})
+
     if not r:
         flash("Student record not found", "error")
         return redirect(url_for("login"))
@@ -113,32 +121,53 @@ def dashboard():
     admission = r.get("admission_fee", 0)
     annual = r.get("annual_fee", 0)
     tuition = r.get("tuition_fee", 0)
-    devl = r.get("devl_fee", 0)/12
-    eclass = r.get("eclass", 0)/12
-    science = r.get("science", 0)/12
-    computer = r.get("computer", 0)/12
-    kgarten = r.get("kgarten", 0)/12
-    transport = r.get("transport_total", 0)/12
+    devl = r.get("devl_fee", 0) / 12
+    eclass = r.get("eclass", 0) / 12
+    science = r.get("science", 0) / 12
+    computer = r.get("computer", 0) / 12
+    kgarten = r.get("kgarten", 0) / 12
+    transport = r.get("transport_total", 0) / 12
 
-    history = [SimpleNamespace(
-        **x) for x in tran_col.find({"adm_code": adm_code}).sort("date", -1)]
+    history = [
+        SimpleNamespace(**x)
+        for x in tran_col.find({"adm_code": adm_code}).sort("date", -1)
+    ]
     paid_months = [x.month for x in history if hasattr(x, "month")]
 
-    months = ["April", "May", "June", "July", "August", "September",
-              "October", "November", "December", "January", "February", "March"]
+    months = [
+        "April", "May", "June", "July", "August", "September",
+        "October", "November", "December", "January", "February", "March"
+    ]
+
     selected_month = request.args.get("month")
 
     if not selected_month:
         selected_month = next(
-            (m for m in months if m not in paid_months), None)
+            (m for m in months if m not in paid_months), None
+        )
 
     if not selected_month:
         selected_month = datetime.datetime.now().strftime("%B")
 
     if selected_month == "April":
-        total = admission+annual+tuition+devl+eclass+science+computer+kgarten+transport
+        total = (
+            admission + annual + tuition + devl + eclass +
+            science + computer + kgarten + transport
+        )
     else:
-        total = tuition+devl+eclass+science+computer+kgarten+transport
+        total = (
+            tuition + devl + eclass + science +
+            computer + kgarten + transport
+        )
+
+    # Dynamic school details
+    school_data = get_school()
+
+    school = {
+        "name": school_data.get("school_name", ""),
+        "address": school_data.get("address", ""),
+        "phone": school_data.get("phone", "")
+    }
 
     return render_template(
         "parent_dashboard.html",
@@ -151,19 +180,20 @@ def dashboard():
         razorpay_key_id=RAZORPAY_KEY_ID,
         selected_month=selected_month,
         photo=r.get("photo", ""),
-        school={"name": "SHARDA INTERNATIONAL SCHOOL",
-                "address": "SHIV NAGAR, PATAUDI ROAD, GURUGRAM-122001(Hr.)"}
+        school=school
     )
 
 
 @app.route("/create_order", methods=["POST"])
 def create_order():
-    amount = int(float(request.form.get("paid", 0))*100)
+    amount = int(float(request.form.get("paid", 0)) * 100)
+
     order = razorpay_client.order.create({
         "amount": amount,
         "currency": "INR",
         "payment_capture": "1"
     })
+
     return jsonify({
         "order_id": order["id"],
         "admission_code": request.form.get("admission_code")
@@ -182,6 +212,7 @@ def verify_payment():
         })
 
         payment = razorpay_client.payment.fetch(data["payment_id"])
+
         if payment["status"] != "captured":
             return {"status": "failed"}
 
@@ -189,38 +220,52 @@ def verify_payment():
         month = data.get("month")
 
         if tran_col.find_one({"adm_code": adm_code, "month": month}):
-            return {"status": "error", "message": "Fee for this month already paid"}
+            return {
+                "status": "error",
+                "message": "Fee for this month already paid"
+            }
 
         r = master_col.find_one({"adm_code": adm_code})
+
         if not r:
-            return {"status": "error", "message": "Student not found"}
+            return {
+                "status": "error",
+                "message": "Student not found"
+            }
 
         admission = r.get("admission_fee", 0)
         annual = r.get("annual_fee", 0)
         tuition = r.get("tuition_fee", 0)
-        devl = r.get("devl_fee", 0)/12
-        eclass = r.get("eclass", 0)/12
-        science = r.get("science", 0)/12
-        computer = r.get("computer", 0)/12
-        kgarten = r.get("kgarten", 0)/12
-        transport = r.get("transport_total", 0)/12
+        devl = r.get("devl_fee", 0) / 12
+        eclass = r.get("eclass", 0) / 12
+        science = r.get("science", 0) / 12
+        computer = r.get("computer", 0) / 12
+        kgarten = r.get("kgarten", 0) / 12
+        transport = r.get("transport_total", 0) / 12
 
         if month == "April":
-            expected = admission+annual+tuition+devl + \
-                eclass+science+computer+kgarten+transport
+            expected = (
+                admission + annual + tuition + devl +
+                eclass + science + computer + kgarten + transport
+            )
         else:
-            expected = tuition+devl+eclass+science+computer+kgarten+transport
+            expected = (
+                tuition + devl + eclass + science +
+                computer + kgarten + transport
+            )
 
         paid = float(data.get("paid", 0))
 
-        if abs(paid-expected) > 1:
+        if abs(paid - expected) > 1:
             return {
                 "status": "error",
                 "message": f"Invalid amount. Expected {expected}, got {paid}"
             }
 
-        prev_balance = float(r.get("balance_fee", r.get("total_fee", 0)))
-        new_balance = max(prev_balance-paid, 0)
+        prev_balance = float(
+            r.get("balance_fee", r.get("total_fee", 0))
+        )
+        new_balance = max(prev_balance - paid, 0)
         receipt_no = get_next_receipt_number()
 
         tran_col.insert_one({
@@ -253,15 +298,21 @@ def verify_payment():
         master_col.update_one(
             {"adm_code": adm_code},
             {"$set": {
-                "paid_fee": r.get("paid_fee", 0)+paid,
+                "paid_fee": r.get("paid_fee", 0) + paid,
                 "balance_fee": new_balance
             }}
         )
 
-        return {"status": "success", "receipt_no": receipt_no}
+        return {
+            "status": "success",
+            "receipt_no": receipt_no
+        }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 
 @app.route("/logout")
