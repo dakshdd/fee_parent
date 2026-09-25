@@ -32,16 +32,31 @@ def get_next_receipt_number():
 
 @app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        adm_code = request.form.get("adm_code", "").strip()
-        password = request.form.get("password", "")
-        r = master_col.find_one({"adm_code": adm_code})
-        if r and "password_hash" in r and check_password_hash(r["password_hash"], password):
+    # Flutter se adm_code aaye to direct dashboard
+    adm_code = request.args.get("adm_code", "").strip().upper()
+
+    if adm_code:
+        student = master_col.find_one({"adm_code": adm_code})
+
+        if student:
             session["admission_code"] = adm_code
             return redirect(url_for("dashboard"))
-        flash("Invalid login credentials", "error")
-    return render_template("parent_login.html")
 
+    if request.method == "POST":
+        adm_code = request.form.get("adm_code", "").strip().upper()
+        password = request.form.get("password", "")
+
+        r = master_col.find_one({"adm_code": adm_code})
+
+        if r and "password_hash" in r and check_password_hash(
+                r["password_hash"], password
+        ):
+            session["admission_code"] = adm_code
+            return redirect(url_for("dashboard"))
+
+        flash("Invalid login credentials", "error")
+
+    return render_template("parent_login.html")
 # ================== Flutter Mobile Login API ==================
 @app.route("/api/login", methods=["POST"])
 def api_login():
