@@ -140,6 +140,35 @@
       border-color: #fed7aa
     }
 
+    .attendance-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px
+    }
+
+    .att-box {
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 9px;
+      text-align: center
+    }
+
+    .att-box span {
+      display: block;
+      font-size: 11px;
+      color: #64748b
+    }
+
+    .att-box strong {
+      font-size: 16px
+    }
+
+    @media(max-width:600px) {
+      .attendance-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
     .balance strong {
       color: #ea580c
     }
@@ -347,7 +376,34 @@
 
       <div id="payment-status"></div>
     </div>
+    <!-- ATTENDANCE -->
+    <div class="card">
+      <h2>📊 Attendance</h2>
 
+      <div class="attendance-grid">
+
+        <div class="att-box">
+          <span>Present</span>
+          <strong>{{ present }}</strong>
+        </div>
+
+        <div class="att-box">
+          <span>Absent</span>
+          <strong>{{ absent }}</strong>
+        </div>
+
+        <div class="att-box">
+          <span>Leave</span>
+          <strong>{{ leave }}</strong>
+        </div>
+
+        <div class="att-box">
+          <span>Attendance</span>
+          <strong>{{ attendance_percent }}%</strong>
+        </div>
+
+      </div>
+    </div>
     <!-- HISTORY -->
     <div class="card">
       <h2>📋 Transaction History</h2>

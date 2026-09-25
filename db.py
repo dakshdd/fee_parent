@@ -7,7 +7,7 @@ MONGO_URI = os.getenv("MONGO_URI", LOCAL_URI)
 
 master_collection = counters_collection = users_collection = None
 students_collection = transport_collection = tran_collection = None
-school_collection = None
+school_collection = attendance_collection = None
 tran_col = master_col = None
 
 try:
@@ -17,11 +17,13 @@ try:
 
     # SCHOOL DATABASE
     school_db = client["school_db"]
+
     master_collection = school_db["master"]
     counters_collection = school_db["counters"]
     users_collection = school_db["users"]
     students_collection = school_db["students"]
     school_collection = school_db["school_master"]
+    attendance_collection = school_db["attendance"]
 
     # TRANSPORT DATABASE
     transport_db = client["transport_db"]
@@ -60,4 +62,6 @@ except Exception as e:
 def get_school(school_id="SCHOOL001"):
     if school_collection is None:
         return {}
-    return school_collection.find_one({"school_id": school_id}) or {}
+    return school_collection.find_one(
+        {"school_id": school_id}
+    ) or {}

@@ -1,3 +1,4 @@
+# parent_login.py
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import check_password_hash
 from pymongo import ReturnDocument
@@ -5,7 +6,7 @@ from types import SimpleNamespace
 import razorpay
 import os
 import datetime
-from db import master_collection, counters_collection, tran_collection as tran_col, master_col, get_school
+from db import master_collection, counters_collection, tran_collection as tran_col, master_col, get_school, attendance_collection
 from datetime import timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -112,6 +113,20 @@ def dashboard():
         return redirect(url_for("login"))
 
     adm_code = session["admission_code"]
+    attendance_records = list(
+        attendance_collection.find({"adm_code": adm_code})
+    )
+
+    present = sum(1 for x in attendance_records if x.get(
+        "status") == "Present")
+    absent = sum(1 for x in attendance_records if x.get("status") == "Absent")
+    leave = sum(1 for x in attendance_records if x.get("status") == "Leave")
+
+    attendance_total = present + absent + leave
+
+    attendance_percent = round(
+        present / attendance_total * 100, 1
+    ) if attendance_total else 0
     r = master_col.find_one({"adm_code": adm_code})
 
     if not r:
@@ -180,7 +195,12 @@ def dashboard():
         razorpay_key_id=RAZORPAY_KEY_ID,
         selected_month=selected_month,
         photo=r.get("photo", ""),
-        school=school
+        school=school,
+        present=present,
+        absent=absent,
+        leave=leave,
+        attendance_total=attendance_total,
+        attendance_percent=attendance_percent
     )
 
 
