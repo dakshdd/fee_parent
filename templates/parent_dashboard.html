@@ -5,7 +5,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{ school.name or "Student Dashboard" }}</title>
-
   <style>
     * {
       box-sizing: border-box
@@ -119,7 +118,7 @@
     .fee-box {
       background: #f8fafc;
       border: 1px solid #edf1f5;
-      padding: 10px;
+      padding: 12px;
       border-radius: 9px
     }
 
@@ -130,14 +129,82 @@
     }
 
     .fee-box strong {
-      font-size: 16px;
+      font-size: 17px;
       display: block;
-      margin-top: 3px
+      margin-top: 5px
+    }
+
+    .fine-box {
+      background: #fff7ed;
+      border-color: #fed7aa
+    }
+
+    .fine-box strong {
+      color: #ea580c
     }
 
     .balance {
-      background: #fff7ed;
-      border-color: #fed7aa
+      background: #eff6ff;
+      border-color: #bfdbfe
+    }
+
+    .balance strong {
+      color: #2563eb
+    }
+
+    .total-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 13px;
+      border-radius: 9px;
+      margin: 12px 0
+    }
+
+    .total-box span {
+      font-size: 13px;
+      color: #166534
+    }
+
+    .total-box strong {
+      float: right;
+      font-size: 19px;
+      color: #15803d
+    }
+
+    .pay-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px
+    }
+
+    .pay-btn {
+      border: 0;
+      background: #16a34a;
+      color: white;
+      padding: 11px 20px;
+      border-radius: 9px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px
+    }
+
+    .pay-btn:hover {
+      background: #15803d
+    }
+
+    .pay-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed
+    }
+
+    #payment-status {
+      display: none;
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #fff
     }
 
     .attendance-grid {
@@ -163,52 +230,6 @@
       font-size: 16px
     }
 
-    @media(max-width:600px) {
-      .attendance-grid {
-        grid-template-columns: repeat(2, 1fr)
-      }
-    }
-
-    .balance strong {
-      color: #ea580c
-    }
-
-    .pay-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px
-    }
-
-    .pay-btn {
-      border: 0;
-      background: #16a34a;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 9px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 13px
-    }
-
-    .pay-btn:hover {
-      background: #15803d
-    }
-
-    .pay-btn:disabled {
-      opacity: .5;
-      cursor: not-allowed
-    }
-
-    #payment-status {
-      display: none;
-      margin-top: 10px;
-      padding: 9px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #fff
-    }
-
     .table-wrap {
       overflow-x: auto
     }
@@ -216,7 +237,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 500px
+      min-width: 650px
     }
 
     th,
@@ -243,6 +264,11 @@
       font-weight: 600
     }
 
+    .fine-text {
+      color: #ea580c;
+      font-weight: 600
+    }
+
     @media(max-width:600px) {
       .container {
         padding: 9px
@@ -261,7 +287,7 @@
       }
 
       .fee-box:last-child {
-        grid-column: 1/-1
+        grid-column: auto
       }
 
       .pay-row {
@@ -271,6 +297,16 @@
 
       .pay-btn {
         width: 100%
+      }
+
+      .attendance-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .total-box strong {
+        float: none;
+        display: block;
+        margin-top: 5px
       }
     }
   </style>
@@ -282,157 +318,143 @@
     <!-- SCHOOL -->
     <div class="school">
       <h1>🏫 {{ school.name }}</h1>
-
-      {% if school.address %}
-      <p>📍 {{ school.address }}</p>
-      {% endif %}
-
-      {% if school.phone %}
-      <p>📞 {{ school.phone }}</p>
-      {% endif %}
+      {% if school.address %}<p>📍 {{ school.address }}</p>{% endif %}
+      {% if school.phone %}<p>📞 {{ school.phone }}</p>{% endif %}
     </div>
 
-    <!-- STUDENT -->
+    <!-- STUDENT DETAILS -->
     <div class="card">
       <h2>👨‍🎓 Student Details</h2>
-
       <div class="student">
-
         {% if photo %}
-        <img src="{{ url_for('static', filename='uploads/' ~ photo) }}" class="photo" alt="Student Photo"
+        <img src="{{ url_for('static',filename='uploads/' ~ photo) }}" class="photo" alt="Student Photo"
           onerror="this.style.display='none';">
         {% else %}
         <div class="no-photo">No Photo</div>
         {% endif %}
-
         <div class="details">
-
-          <div class="detail">
-            <span class="label">Admission Code</span>
-            <span class="value">{{ student.adm_code }}</span>
+          <div class="detail"><span class="label">Admission Code</span><span class="value">{{ student.adm_code }}</span>
           </div>
-
-          <div class="detail">
-            <span class="label">Student Name</span>
-            <span class="value">{{ student.student_name }}</span>
+          <div class="detail"><span class="label">Student Name</span><span class="value">{{ student.student_name
+              }}</span></div>
+          <div class="detail"><span class="label">Class</span><span class="value">{{ student.class }}</span></div>
+          <div class="detail"><span class="label">Father Name</span><span class="value">{{ student.father_name }}</span>
           </div>
-
-          <div class="detail">
-            <span class="label">Class</span>
-            <span class="value">{{ student.class }}</span>
-          </div>
-
-          <div class="detail">
-            <span class="label">Father Name</span>
-            <span class="value">{{ student.father_name }}</span>
-          </div>
-
         </div>
       </div>
     </div>
 
-    <!-- FEE -->
+    <!-- FEE DETAILS -->
     <div class="card">
       <h2>💳 Fee Details</h2>
 
       <div class="fee">
-
         <div class="fee-box">
-          <span>Month</span>
+          <span>Selected Month</span>
           <strong>{{ selected_month }}</strong>
         </div>
 
         <div class="fee-box">
-          <span>Payable Amount</span>
-          <strong>₹{{ total }}</strong>
+          <span>Monthly School Fee</span>
+          <strong>₹{{ "%.2f"|format(current_fee|float) }}</strong>
+        </div>
+
+        <div class="fee-box fine-box">
+          <span>Late Fee Fine</span>
+          <strong>₹{{ "%.2f"|format(current_late_fee|float) }}</strong>
         </div>
 
         <div class="fee-box balance">
-          <span>Outstanding</span>
-          <strong>₹{{ balance }}</strong>
+          <span>Outstanding School Fee</span>
+          <strong>
+            ₹{% set ns = namespace(total=0) %}
+            {% for m, v in month_balances.items() %}
+            {% set ns.total = ns.total + (v|float) %}
+            {% endfor %}
+            {{ "%.2f"|format(ns.total) }}
+          </strong>
         </div>
-
       </div>
 
-      <input type="hidden" id="paid" value="{{ total|int }}">
+      <div class="total-box">
+        <span>Total Payable (School Fee + Late Fine)</span>
+        <strong>₹{{ "%.2f"|format(total|float) }}</strong>
+        <div style="clear:both"></div>
+      </div>
+
+      <input type="hidden" id="paid" value="{{ total }}">
 
       <div class="pay-row">
-
         <small style="color:#64748b">
-          This Monthly fee: ₹{{ total }}
+          School Fee: ₹{{ "%.2f"|format(current_fee|float) }} + Fine: ₹{{ "%.2f"|format(current_late_fee|float) }}
         </small>
 
-        <button id="payBtn" class="pay-btn" {% if balance <=0 %}disabled{% endif %}>
-
-          {% if balance > 0 %}
-          Pay ₹{{ total }}
+        <button id="payBtn" class="pay-btn" {% if total|float <=0 %}disabled{% endif %}>
+          {% if total|float > 0 %}
+          Pay ₹{{ "%.2f"|format(total|float) }}
           {% else %}
           Paid ✓
           {% endif %}
-
         </button>
-
       </div>
 
       <div id="payment-status"></div>
     </div>
+
     <!-- ATTENDANCE -->
     <div class="card">
       <h2>📊 Attendance</h2>
-
       <div class="attendance-grid">
-
-        <div class="att-box">
-          <span>Present</span>
-          <strong>{{ present }}</strong>
-        </div>
-
-        <div class="att-box">
-          <span>Absent</span>
-          <strong>{{ absent }}</strong>
-        </div>
-
-        <div class="att-box">
-          <span>Leave</span>
-          <strong>{{ leave }}</strong>
-        </div>
-
-        <div class="att-box">
-          <span>Attendance</span>
-          <strong>{{ attendance_percent }}%</strong>
-        </div>
-
+        <div class="att-box"><span>Present</span><strong>{{ present }}</strong></div>
+        <div class="att-box"><span>Absent</span><strong>{{ absent }}</strong></div>
+        <div class="att-box"><span>Leave</span><strong>{{ leave }}</strong></div>
+        <div class="att-box"><span>Attendance</span><strong>{{ attendance_percent }}%</strong></div>
       </div>
     </div>
-    <!-- HISTORY -->
+
+    <!-- TRANSACTION HISTORY -->
     <div class="card">
       <h2>📋 Transaction History</h2>
-
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Date</th>
               <th>Month</th>
-              <th>Paid</th>
-              <th>Balance</th>
+              <th>School Fee Paid</th>
+              <th>Late Fine</th>
+              <th>Total Collection</th>
+              <th>Fee Balance</th>
             </tr>
           </thead>
-
           <tbody>
             {% for h in history %}
-            <tr>
-              <td>{{ h.date.strftime("%d-%m-%Y") }}</td>
-              <td>{{ h.month }}</td>
-              <td class="paid">₹{{ h.paid }}</td>
-              <td class="remaining">₹{{ h.balance }}</td>
-            </tr>
+            {% set fine = h.late_fee|default(h.auto_late_fee|default(0),true)|float %}
+            {% set total_paid = h.amount_paid|default(h.paid|default(0),true)|float %}
+            {% set fee_paid = h.fee_paid|default(total_paid-fine,true)|float %}
+            {% set ns = namespace(balance=0) %}
 
+            {% if h.month_details is defined and h.month_details %}
+            {% for mn, detail in h.month_details.items() %}
+            {% if detail is mapping %}
+            {% set ns.balance = ns.balance + (detail.balance|default(0)|float) %}
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            {% set ns.balance = h.balance|default(0)|float %}
+            {% endif %}
+
+            <tr>
+              <td>{% if h.date %}{{ h.date.strftime("%d-%m-%Y") }}{% else %}-{% endif %}</td>
+              <td>{{ h.month }}</td>
+              <td class="paid">₹{{ "%.2f"|format(fee_paid) }}</td>
+              <td class="fine-text">₹{{ "%.2f"|format(fine) }}</td>
+              <td class="paid">₹{{ "%.2f"|format(total_paid) }}</td>
+              <td class="remaining">₹{{ "%.2f"|format(ns.balance) }}</td>
+            </tr>
             {% else %}
             <tr>
-              <td colspan="4" style="text-align:center;color:#94a3b8">
-                No transactions found
-              </td>
+              <td colspan="6" style="text-align:center;color:#94a3b8">No transactions found</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -443,100 +465,104 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
   <script>
-    document.getElementById("payBtn").onclick = function (e) {
+    const payBtn = document.getElementById("payBtn");
+
+    payBtn.onclick = function (e) {
       e.preventDefault();
 
       const paid = parseFloat(document.getElementById("paid").value || 0);
-      const balance = parseFloat("{{ balance }}");
-      const btn = document.getElementById("payBtn");
+      const month = {{ selected_month| tojson
+    }};
+    const admCode = {{ student.adm_code| tojson }};
+    const studentName = {{ student.student_name| tojson }};
+    const studentClass = {{ student.class| tojson }};
+    const fatherName = {{ student.father_name| tojson }};
+    const photo = {{ photo| tojson }};
+    const schoolName = {{ school.name| tojson }};
 
-      if (paid <= 0) {
-        showStatus("Invalid fee amount.", false);
-        return;
-      }
+    if (paid <= 0) {
+      showStatus("Invalid payment amount.", false);
+      return;
+    }
 
-      if (paid > balance) {
-        showStatus("Payment amount exceeds outstanding balance.", false);
-        return;
-      }
+    payBtn.disabled = true;
+    payBtn.innerText = "Processing...";
 
-      btn.disabled = true;
-      btn.innerText = "Processing...";
-
-      fetch("/create_order", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "paid=" + encodeURIComponent(paid) +
-          "&admission_code=" + encodeURIComponent("{{ student.adm_code }}")
+    fetch("/create_order", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        paid: paid,
+        admission_code: admCode,
+        month: month
       })
-        .then(res => res.json())
-        .then(orderData => {
+    })
+      .then(res => res.json())
+      .then(orderData => {
+        if (!orderData.order_id) {
+          throw new Error(orderData.error || orderData.message || "Order creation failed");
+        }
 
-          if (!orderData.order_id)
-            throw new Error(orderData.message || "Order creation failed");
+        const options = {
+          key: {{ razorpay_key_id| tojson
+      }},
+        amount: orderData.amount,
+        currency: "INR",
+        name: schoolName,
+        description: "Fee and late fine for " + month,
+        order_id: orderData.order_id,
 
-          const options = {
-            key: "{{ razorpay_key_id }}",
-            amount: paid * 100,
-            currency: "INR",
-            name: "{{ school.name }}",
-            description: "Fee for {{ selected_month }}",
-            order_id: orderData.order_id,
-
-            handler: function (response) {
-
-              fetch("/verify_payment", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  order_id: response.razorpay_order_id,
-                  payment_id: response.razorpay_payment_id,
-                  signature: response.razorpay_signature,
-                  admission_code: "{{ student.adm_code }}",
-                  student_name: "{{ student.student_name }}",
-                  class: "{{ student.class }}",
-                  father_name: "{{ student.father_name }}",
-                  photo: "{{ photo }}",
-                  month: "{{ selected_month }}",
-                  paid: paid
-                })
-              })
-                .then(res => res.json())
-                .then(data => {
-
-                  if (data.status === "success") {
-                    showStatus("Payment successful!", true);
-
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 1500);
-
-                  } else {
-                    showStatus("Payment failed: " + data.message, false);
-                    btn.disabled = false;
-                    btn.innerText = "Pay ₹" + paid;
-                  }
-                });
-            },
-
-            modal: {
-              ondismiss: function () {
-                btn.disabled = false;
-                btn.innerText = "Pay ₹" + paid;
+        handler: function (response) {
+          fetch("/verify_payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              admission_code: admCode,
+              student_name: studentName,
+              class: studentClass,
+              father_name: fatherName,
+              photo: photo,
+              month: month,
+              paid: paid
+            })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.status === "success") {
+                showStatus("Payment successful!", true);
+                setTimeout(() => window.location.reload(), 1500);
+              } else {
+                showStatus("Payment failed: " + (data.message || "Please contact school."), false);
+                payBtn.disabled = false;
+                payBtn.innerText = "Pay ₹" + paid.toFixed(2);
               }
-            }
-          };
+            })
+            .catch(error => {
+              showStatus(error.message, false);
+              payBtn.disabled = false;
+            });
+        },
 
-          new Razorpay(options).open();
-        })
-        .catch(error => {
-          showStatus(error.message || "Unable to start payment.", false);
-          btn.disabled = false;
-          btn.innerText = "Pay ₹" + paid;
-        });
-    };
+        modal: {
+        ondismiss: function () {
+          payBtn.disabled = false;
+          payBtn.innerText = "Pay ₹" + paid.toFixed(2);
+        }
+      }
+        };
+
+    new Razorpay(options).open();
+    })
+    .catch (error => {
+      showStatus(error.message || "Unable to start payment.", false);
+      payBtn.disabled = false;
+      payBtn.innerText = "Pay ₹" + paid.toFixed(2);
+    });
+};
 
     function showStatus(message, success) {
       const box = document.getElementById("payment-status");
@@ -545,7 +571,6 @@
       box.innerText = message;
     }
   </script>
-
 </body>
 
 </html>

@@ -3,4 +3,5 @@ opencv-python
 pymongo
 werkzeug
 gunicorn
+python-dotenv
 razorpay
