@@ -1,12 +1,21 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from werkzeug.security import check_password_hash
-from pymongo import ReturnDocument
-from types import SimpleNamespace
-from datetime import datetime, timezone, timedelta, date
-from db import master_col, counters_collection, tran_collection as tran_col, get_school, attendance_collection
-import razorpay
+
 import os
+from datetime import datetime, timezone, timedelta, date
+from types import SimpleNamespace
+
+import razorpay
 from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from itsdangerous import URLSafeTimedSerializer
+from pymongo import ReturnDocument
+from werkzeug.security import check_password_hash
+
+from db import (
+    master_col, counters_collection,
+    tran_collection as tran_col,
+    get_school, attendance_collection
+)
+from parent_homework import homework_bp
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
@@ -22,6 +31,7 @@ HEADS = [
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-this-secret-key")
+app.register_blueprint(homework_bp)
 
 KEY = os.environ.get("RAZORPAY_KEY_ID", "").strip()
 SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "").strip()
@@ -122,7 +132,6 @@ def month_paid(adm, m):
 
 
 def month_head_paid(adm, m):
-    """Previous head payments, including reconstructed legacy payments."""
     student = master_col.find_one({"adm_code": adm}) or {}
     paid = {k: 0.0 for k in HEADS}
 
@@ -135,13 +144,11 @@ def month_head_paid(adm, m):
             for k in HEADS:
                 paid[k] += money((heads.get(k) or {}).get("paid", 0))
 
-    # Older receipts without head breakup are reconstructed from fee structure.
     legacy = max(month_paid(adm, m) - sum(paid.values()), 0)
     totals = monthly_heads(student, m)
 
     for k in HEADS:
-        available = max(totals[k] - paid[k], 0)
-        allocation = min(legacy, available)
+        allocation = min(legacy, max(totals[k] - paid[k], 0))
         paid[k] += allocation
         legacy -= allocation
 
@@ -158,7 +165,6 @@ def month_balance(adm, m):
             d = md[m] or {}
             if isinstance(d, dict) and "balance" in d:
                 result = money(d["balance"])
-
         elif m in tx_months(t):
             if "balance_amount" in t:
                 result = money(t["balance_amount"])
@@ -194,10 +200,8 @@ def month_late_fee_assessed(adm, m):
         d = (t.get("month_details") or {}).get(m, {})
 
         if isinstance(d, dict):
-            assessed = max(
-                assessed,
-                money(d.get("late_fee_assessed", d.get("late_fee", 0)))
-            )
+            assessed = max(assessed, money(
+                d.get("late_fee_assessed", d.get("late_fee", 0))))
 
     return assessed
 
@@ -209,7 +213,6 @@ def month_late_fee(s, adm, m, today=None):
 
     year = today.year if today.month >= 4 else today.year - 1
     month_number = MONTHS.index(m) + 4
-
     if month_number > 12:
         month_number -= 12
 
@@ -255,6 +258,54 @@ def history(adm):
     return rows
 
 
+# ---------------- PARENT LOGIN API ----------------
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    try:
+        d = request.get_json() or {}
+        adm = str(d.get("adm_code", "")).strip().upper()
+        pwd = str(d.get("password", "")).strip()
+
+        if not adm or not pwd:
+            return jsonify(success=False, message="Admission Code and Password required"), 400
+
+        s = master_col.find_one({"adm_code": adm})
+
+        if not s:
+            return jsonify(success=False, message="Invalid Admission Code"), 401
+
+        if not s.get("password_hash") or not check_password_hash(s["password_hash"], pwd):
+            return jsonify(success=False, message="Incorrect Password"), 401
+
+        token = URLSafeTimedSerializer(
+            app.secret_key,
+            salt="parent-homework"
+        ).dumps({"adm_code": adm})
+
+        sc = school()
+
+        return jsonify({
+            "success": True,
+            "token": token,
+            "adm_code": adm,
+            "student_name": s.get("student_name", ""),
+            "class": s.get("class", ""),
+            "section": s.get("sec", s.get("section", "")),
+            "father_name": s.get("father_name", ""),
+            "photo": s.get("photo", ""),
+            "school_name": sc.get("name", ""),
+            "school_address": sc.get("address", ""),
+            "school_phone": sc.get("phone", "")
+        }), 200
+
+    except Exception:
+        app.logger.exception("Parent API login failed")
+        return jsonify(success=False, message="Unable to process login"), 500
+
+
+# ---------------- WEB LOGIN ----------------
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     adm = request.args.get("adm_code", "").strip().upper()
@@ -277,40 +328,7 @@ def login():
     return render_template("parent_login.html", school=school())
 
 
-@app.route("/api/login", methods=["POST"])
-def api_login():
-    try:
-        d = request.get_json() or {}
-        adm = d.get("adm_code", "").strip().upper()
-        pwd = d.get("password", "").strip()
-        s = master_col.find_one({"adm_code": adm})
-
-        if not s:
-            return jsonify(success=False, message="Invalid Admission Code"), 401
-
-        if not s.get("password_hash") or not check_password_hash(s["password_hash"], pwd):
-            return jsonify(success=False, message="Incorrect Password"), 401
-
-        sc = school()
-
-        return jsonify(
-            success=True,
-            adm_code=s.get("adm_code", ""),
-            student_name=s.get("student_name", ""),
-            **{
-                "class": s.get("class", ""),
-                "section": s.get("sec", s.get("section", "")),
-                "father_name": s.get("father_name", ""),
-                "photo": s.get("photo", ""),
-                "school_name": sc["name"],
-                "school_address": sc["address"],
-                "school_phone": sc["phone"]
-            }
-        )
-
-    except Exception as e:
-        return jsonify(success=False, message=str(e)), 500
-
+# ---------------- DASHBOARD ----------------
 
 @app.route("/dashboard")
 def dashboard():
@@ -334,8 +352,7 @@ def dashboard():
 
     requested = request.args.get("month")
     selected = requested if requested in MONTHS and not paid_status(
-        s, adm, requested
-    ) else first_due_month(s, adm)
+        s, adm, requested) else first_due_month(s, adm)
 
     current_fee = fee(s, selected)
     current_paid = month_paid(adm, selected)
@@ -384,10 +401,12 @@ def dashboard():
     )
 
 
+# ---------------- RAZORPAY ORDER ----------------
+
 @app.route("/create_order", methods=["POST"])
 def create_order():
     if not rz:
-        return jsonify(error="Razorpay keys are not configured. Check the .env file."), 503
+        return jsonify(error="Razorpay keys are not configured."), 503
 
     adm = request.form.get("admission_code", "").strip().upper()
     m = request.form.get("month") or request.form.get("selected_month") or ""
@@ -403,12 +422,8 @@ def create_order():
 
     if m:
         max_amount = payable(s, adm, m)
-
         if amount <= 0 or amount > max_amount + 0.01:
-            return jsonify(
-                error=f"Maximum payable amount including late fee is ₹{max_amount:.2f}"
-            ), 400
-
+            return jsonify(error=f"Maximum payable amount including late fee is ₹{max_amount:.2f}"), 400
     elif amount <= 0:
         return jsonify(error="Invalid amount"), 400
 
@@ -424,19 +439,18 @@ def create_order():
             admission_code=adm,
             amount=int(round(amount * 100))
         )
-
     except Exception as e:
+        app.logger.exception("Razorpay order creation failed")
         return jsonify(error=str(e)), 500
 
+
+# ---------------- RAZORPAY PAYMENT VERIFY ----------------
 
 @app.route("/verify_payment", methods=["POST"])
 def verify_payment():
     try:
         if not rz:
-            return jsonify(
-                status="error",
-                message="Razorpay keys are not configured. Check the .env file."
-            ), 503
+            return jsonify(status="error", message="Razorpay keys are not configured."), 503
 
         d = request.get_json() or {}
 
@@ -451,7 +465,7 @@ def verify_payment():
         if payment.get("status") != "captured":
             return jsonify(status="failed")
 
-        adm = d.get("admission_code", "").strip().upper()
+        adm = str(d.get("admission_code", "")).strip().upper()
         month_selected = d.get("month")
         student = master_col.find_one({"adm_code": adm})
 
@@ -478,7 +492,6 @@ def verify_payment():
         details = {}
         receipt_head_totals = {k: 0.0 for k in HEADS}
 
-        # Payment allocation: fee first, then late fine, month by month.
         for month in MONTHS[:MONTHS.index(month_selected) + 1]:
             base_due = balance(student, adm, month)
             fine_due = month_late_fee(student, adm, month)
@@ -505,7 +518,6 @@ def verify_payment():
                     "balance": head_balance
                 }
 
-            # Allocate this receipt's fee payment across fee heads.
             head_remaining = fee_paid
 
             for key in HEADS:
@@ -514,8 +526,7 @@ def verify_payment():
 
                 head_details[key]["paid"] = head_paid_now
                 head_details[key]["balance"] = round(
-                    head_balance - head_paid_now, 2
-                )
+                    head_balance - head_paid_now, 2)
 
                 receipt_head_totals[key] += head_paid_now
                 head_remaining = round(head_remaining - head_paid_now, 2)
@@ -525,10 +536,8 @@ def verify_payment():
 
             fine_already_paid = month_late_fee_paid(adm, month)
             fine_assessed_before = month_late_fee_assessed(adm, month)
-
             fine_assessed_total = round(
-                max(fine_assessed_before, fine_already_paid + fine_due), 2
-            )
+                max(fine_assessed_before, fine_already_paid + fine_due), 2)
 
             details[month] = {
                 "total": fee(student, month),
@@ -546,38 +555,24 @@ def verify_payment():
                 break
 
         if remaining > 0.01:
-            return jsonify(
-                status="error",
-                message="Unable to allocate full payment"
-            ), 400
+            return jsonify(status="error", message="Unable to allocate full payment"), 400
 
         if not details:
-            return jsonify(
-                status="error",
-                message="No outstanding fee found"
-            ), 400
+            return jsonify(status="error", message="No outstanding fee found"), 400
 
         receipt_no = receipt()
-
         fee_paid_total = round(sum(x["paid"] for x in details.values()), 2)
-        fine_paid_total = round(sum(
-            x["late_fee_paid"] for x in details.values()
-        ), 2)
+        fine_paid_total = round(sum(x["late_fee_paid"]
+                                for x in details.values()), 2)
 
-        old_balance = money(
-            student.get("balance_fee", student.get("total_fee", 0))
-        )
-
-        # Late fine is never deducted from the student's fee balance.
+        old_balance = money(student.get(
+            "balance_fee", student.get("total_fee", 0)))
         new_balance = max(old_balance - fee_paid_total, 0)
 
-        fee_balance_after = round(sum(
-            x["balance"] for x in details.values()
-        ), 2)
-
-        fine_balance_after = round(sum(
-            x["late_fee_balance"] for x in details.values()
-        ), 2)
+        fee_balance_after = round(sum(x["balance"]
+                                  for x in details.values()), 2)
+        fine_balance_after = round(
+            sum(x["late_fee_balance"] for x in details.values()), 2)
 
         transaction = {
             "receipt_no": receipt_no,
@@ -587,24 +582,13 @@ def verify_payment():
             "section": student.get("sec", student.get("section", "")),
             "father_name": student.get("father_name", ""),
             "photo": student.get("photo", ""),
-
             "months": list(details),
             "month": month_selected,
             "selected_month": month_selected,
             "month_details": details,
-
-            # Head-wise amounts paid in this receipt.
-            "head_totals": {
-                k: round(v, 2) for k, v in receipt_head_totals.items()
-            },
-            "paid_head_totals": {
-                k: round(v, 2) for k, v in receipt_head_totals.items()
-            },
-
-            # Fee-only accounting.
-            "month_total": round(sum(
-                x["total"] for x in details.values()
-            ), 2),
+            "head_totals": {k: round(v, 2) for k, v in receipt_head_totals.items()},
+            "paid_head_totals": {k: round(v, 2) for k, v in receipt_head_totals.items()},
+            "month_total": round(sum(x["total"] for x in details.values()), 2),
             "amount_paid": fee_paid_total,
             "paid_amount": fee_paid_total,
             "paid": fee_paid_total,
@@ -612,15 +596,12 @@ def verify_payment():
             "balance_amount": fee_balance_after,
             "balance": fee_balance_after,
             "student_balance": new_balance,
-
-            # Fine and actual collection.
             "late_fee": fine_paid_total,
             "late_fee_paid": fine_paid_total,
             "auto_late_fee": fine_paid_total,
             "late_fee_balance": fine_balance_after,
             "total_collected": collected_total,
             "payment_total": collected_total,
-
             "is_balance_payment": True,
             "payment_type": "Online Payment",
             "payment_id": d["payment_id"],
@@ -652,8 +633,11 @@ def verify_payment():
         )
 
     except Exception as e:
+        app.logger.exception("Payment verification failed")
         return jsonify(status="error", message=str(e)), 400
 
+
+# ---------------- LOGOUT ----------------
 
 @app.route("/logout")
 def logout():
