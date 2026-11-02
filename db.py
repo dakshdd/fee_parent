@@ -9,6 +9,7 @@ master_collection = counters_collection = users_collection = None
 students_collection = transport_collection = tran_collection = None
 school_collection = attendance_collection = None
 tran_col = master_col = None
+homework_collection = None
 
 try:
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
@@ -24,6 +25,7 @@ try:
     students_collection = school_db["students"]
     school_collection = school_db["school_master"]
     attendance_collection = school_db["attendance"]
+    homework_collection = school_db["homework"]
 
     # TRANSPORT DATABASE
     transport_db = client["transport_db"]
