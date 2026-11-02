@@ -304,6 +304,108 @@ def api_login():
         return jsonify(success=False, message="Unable to process login"), 500
 
 
+# ---------------- PARENT REPORT CARD API ----------------
+
+@app.route("/api/parent/report-card", methods=["GET"])
+def parent_report_card_api():
+    try:
+        auth = request.headers.get("Authorization", "")
+        token = auth.replace("Bearer ", "", 1).strip()
+
+        if not token:
+            return jsonify(success=False, message="Login token missing"), 401
+
+        serializer = URLSafeTimedSerializer(
+            app.secret_key,
+            salt="parent-homework"
+        )
+
+        try:
+            token_data = serializer.loads(token, max_age=30 * 24 * 60 * 60)
+        except Exception:
+            return jsonify(success=False, message="Invalid or expired token"), 401
+
+        adm = str(token_data.get("adm_code", "")).strip().upper()
+
+        student = master_col.find_one({"adm_code": adm})
+
+        if not student:
+            return jsonify(success=False, message="Student not found"), 404
+
+        mc = master_col.database["marks"]
+
+        exam_docs = list(mc.find({"adm_code": adm}))
+
+        exams = sorted(set(
+            str(x.get("exam", "")).strip()
+            for x in exam_docs if x.get("exam")
+        ))
+
+        exam = request.args.get("exam", "").strip()
+
+        if not exam or exam not in exams:
+            exam = exams[0] if exams else ""
+
+        school_id = student.get("school_id", "SCH001")
+
+        marks = list(mc.find({
+            "adm_code": adm,
+            "exam": exam,
+            "school_id": school_id
+        }).sort("subject", 1)) if exam else []
+
+        def num(value):
+            try:
+                return float(value or 0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        total = sum(num(x.get("marks")) for x in marks)
+        maximum = sum(num(x.get("max_marks")) for x in marks)
+
+        percentage = round(total / maximum * 100, 2) if maximum else 0
+
+        grade = (
+            "A+" if percentage >= 90 else
+            "A" if percentage >= 80 else
+            "B+" if percentage >= 70 else
+            "B" if percentage >= 60 else
+            "C" if percentage >= 50 else
+            "D" if percentage >= 40 else "F"
+        )
+
+        result = "PASS" if percentage >= 40 and maximum else "FAIL"
+
+        subject_data = [{
+            "subject": str(x.get("subject", "")),
+            "marks": num(x.get("marks")),
+            "max_marks": num(x.get("max_marks"))
+        } for x in marks]
+
+        return jsonify({
+            "success": True,
+            "student": {
+                "adm_code": adm,
+                "student_name": student.get("student_name", ""),
+                "class": student.get("class", ""),
+                "section": student.get("sec", student.get("section", "")),
+                "father_name": student.get("father_name", "")
+            },
+            "exams": exams,
+            "exam": exam,
+            "marks": subject_data,
+            "total": round(total, 2),
+            "maximum": round(maximum, 2),
+            "percentage": percentage,
+            "grade": grade,
+            "result": result
+        }), 200
+
+    except Exception:
+        app.logger.exception("Parent report card API failed")
+        return jsonify(success=False, message="Unable to load report card"), 500
+
+
 # ---------------- WEB LOGIN ----------------
 
 @app.route("/", methods=["GET", "POST"])
