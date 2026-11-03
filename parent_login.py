@@ -304,6 +304,84 @@ def api_login():
         return jsonify(success=False, message="Unable to process login"), 500
 
 
+# ---------------- PARENT ATTENDANCE API ----------------
+
+@app.route("/api/parent/attendance", methods=["GET"])
+def parent_attendance_api():
+    try:
+        auth = request.headers.get("Authorization", "")
+        token = auth.replace("Bearer ", "", 1).strip()
+
+        if not token:
+            return jsonify(
+                success=False,
+                message="Login token missing"
+            ), 401
+
+        serializer = URLSafeTimedSerializer(
+            app.secret_key,
+            salt="parent-homework"
+        )
+
+        try:
+            token_data = serializer.loads(
+                token,
+                max_age=30 * 24 * 60 * 60
+            )
+        except Exception:
+            return jsonify(
+                success=False,
+                message="Invalid or expired token"
+            ), 401
+
+        adm = str(token_data.get("adm_code", "")).strip().upper()
+
+        student = master_col.find_one({"adm_code": adm})
+
+        if not student:
+            return jsonify(
+                success=False,
+                message="Student not found"
+            ), 404
+
+        records = list(
+            attendance_collection.find(
+                {"adm_code": adm},
+                {
+                    "_id": 0,
+                    "date": 1,
+                    "status": 1
+                }
+            ).sort("date", 1)
+        )
+
+        attendance = []
+
+        for item in records:
+            attendance.append({
+                "date": str(item.get("date", "")),
+                "status": str(item.get("status", "")).strip().upper()
+            })
+
+        return jsonify({
+            "success": True,
+            "student": {
+                "adm_code": adm,
+                "student_name": student.get("student_name", ""),
+                "class": student.get("class", ""),
+                "section": student.get("sec", student.get("section", ""))
+            },
+            "attendance": attendance
+        }), 200
+
+    except Exception:
+        app.logger.exception("Parent attendance API failed")
+        return jsonify(
+            success=False,
+            message="Unable to load attendance"
+        ), 500
+
+
 # ---------------- PARENT REPORT CARD API ----------------
 
 @app.route("/api/parent/report-card", methods=["GET"])
